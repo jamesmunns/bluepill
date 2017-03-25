@@ -33,12 +33,32 @@ fn main() {
 
     let mut gpioc = stm32f103xx::GPIOC.get();
     loop {
-        unsafe {
-            for _ in 0..10_000 {};
-            (*gpioc).bsrr.write(|w| w.bits(0x2000_0000));  // .br13();
-            for _ in 0..10_000 {};
-            (*gpioc).bsrr.write(|w| w.bits(0x0000_2000));  // .bs13();
-        }
+        for _ in 0..10_000 {};
+        led_off();
+
+        for _ in 0..10_000 {};
+        led_on();
+    }
+
+}
+
+fn led_on() {
+    let mut gpioc = stm32f103xx::GPIOC.get();
+    unsafe {
+        (*gpioc).bsrr.write(|w| {
+            w.br13();
+            w
+        });
+    }
+}
+
+fn led_off() {
+    let mut gpioc = stm32f103xx::GPIOC.get();
+    unsafe {
+        (*gpioc).bsrr.write(|w| {
+            w.bs13();
+            w
+        });
     }
 
 }
@@ -49,12 +69,14 @@ fn init_led() {
         let mut rcc = stm32f103xx::RCC.get();
 
         // Enable peripheral clock
-        (*rcc).apb2enr.modify(|_, w| w.bits(0xFF)); // FF? or 01? looks like the masking happens anyway
+        (*rcc).apb2enr.write(|w| {
+            w.iopcen().bits(0b1)
+        });
 
         // gpioc: Configure pin 13 as output
-        (*gpioc).crh.modify(|_, w| {
-            w.bits(0x4454_4444) // todo, don't set all?
-        });
+        (*gpioc).crh.write(|w| {
+            w.mode13().bits(0b10)
+        })
     }
 
 }
