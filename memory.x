@@ -1,7 +1,7 @@
 MEMORY
 {
   /* STM32F103 "Blue Pill". Should be 64K of flash, is actually 128K. */
-  FLASH : ORIGIN = 0x08000000, LENGTH = 64K
+  FLASH : ORIGIN = 0x08000000, LENGTH = 128K
   RAM : ORIGIN = 0x20000000, LENGTH = 20K
 }
 
@@ -21,7 +21,6 @@ SECTIONS
     __interrupts = .;
 
     /* Entry point: the reset handler */
-    KEEP(*(.text.start));
     __reset = .;
     *(.text.start);
 

@@ -6,8 +6,14 @@
 // devices.
 #![no_std]
 
+// Necessary to pull in `bkpt!()`
+#![feature(asm)]
+
 // We have to link our crate, obviously
+#[macro_use]
 extern crate demopill;
+
+extern crate stm32f103xx;
 
 // Instead of `std` we use the `core` crate, which provides the subset of
 // `std`'s functionality that works on bare metal environments
@@ -18,16 +24,39 @@ use demopill::interrupts::{self, Interrupts};
 
 // We need a `main` function, just like every other Rust program
 fn main() {
+    // "break main" doesn't seem to trigger?
+    // unsafe {
+    //     bkpt!();
+    // }
+
+    init_led();
+
+    let mut gpioc = stm32f103xx::GPIOC.get();
     loop {
-        let y: u32;
-        let mut x: u32 = 0xDEADBEEF;
-        bar(&mut x);
-        y = u32::MAX;
+        unsafe {
+            for _ in 0..10_000 {};
+            (*gpioc).bsrr.write(|w| w.bits(0x2000_0000));  // .br13();
+            for _ in 0..10_000 {};
+            (*gpioc).bsrr.write(|w| w.bits(0x0000_2000));  // .bs13();
+        }
     }
+
 }
 
-fn bar(z: &mut u32) {
-    *z += 1;
+fn init_led() {
+    unsafe {
+        let mut gpioc = stm32f103xx::GPIOC.get();
+        let mut rcc = stm32f103xx::RCC.get();
+
+        // Enable peripheral clock
+        (*rcc).apb2enr.modify(|_, w| w.bits(0xFF)); // FF? or 01? looks like the masking happens anyway
+
+        // gpioc: Configure pin 13 as output
+        (*gpioc).crh.modify(|_, w| {
+            w.bits(0x4454_4444) // todo, don't set all?
+        });
+    }
+
 }
 
 // The program must specify how exceptions will be handled
